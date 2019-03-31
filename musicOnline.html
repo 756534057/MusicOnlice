@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+        }
+        .box{
+            width: 520px;
+            border: 1px solid gray;
+            margin: 50px auto;
+        }
+        body{
+            background-color: #3c4e59;
+        }
+        .head{
+            width: 500px;
+            margin: 10px;
+            display: flex;
+        }
+        .head-pic img{
+            width:150px;
+            height: 150px;
+            border-radius: 50%;
+            box-sizing: border-box;
+        }
+        .head-cons{
+            width: 350px;
+            height: 150px;
+            font-size: 13px;
+            color: #ffffff;
+        }
+        .head-name{
+            margin: 30px 0 0 30px;
+        }
+        .head-Degree{
+            position: relative;
+            width: 200px;
+            margin: 20px 0 0 10px;
+        }
+        .deg-box{
+            width: 200px;
+            height: 2px;
+        }
+        .deg-total{
+            width: 200px;
+            height: 2px;
+            background-color: red;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .deg-now{
+            width: 0px;
+            height: 2px;
+            background-color: blue;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .deg-bar{
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color:gray;
+            position: absolute;
+            top: -3px;
+            left: 0px;
+        }
+        .head-time {
+            position: absolute;
+            top: -10px;
+            left: 220px;
+        }
+        .head-con{
+            margin: 30px 0px 0 30px;
+            display: flex;
+            align-items: center;
+        }
+        .head-con div{
+            background: url("music/jlt.png") no-repeat;
+        }
+        .head-con .con-prev{
+            width: 20px;
+            height: 20px;
+            background-position-Y:-29px;
+        }
+        .head-con .con-str{
+            width: 20px;
+            height: 30px;
+            margin: 0 20px;
+            background-position-Y:0px;
+        }
+        .head-con .con-next{
+            width: 20px;
+            height: 20px;
+            background-position-Y:-50px;
+        }
+        .head-con .con-vol{
+            width: 30px;
+            height: 22px;
+            margin: 0 20px;
+            background-position-Y:-142px;
+        }
+        .head-con .con-cir{
+            width: 30px;
+            height: 23px;
+            background-position-Y:-206px;
+        }
+        ul{
+            margin:20px 20px;
+            list-style: none;
+        }
+        li{
+            line-height: 30px;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px dashed gray;
+        }
+        .active{
+            background-color: #6d8388;
+        }
+        .search{
+           position: relative;
+            left:314px;
+        }
+    </style>
+</head>
+<body>
+<div class="box">
+    <!--搜索框-->
+    <div class="search">
+        <input id="searchText" type="text"> <button id="searchBon">搜索</button>
+    </div>
+    <!--播放界面-->
+    <div class="head">
+        <!--专辑封面-->
+        <div class="head-pic">
+            <img src="img/fmzj.jpg" alt="">
+        </div>
+        <div class="head-cons">
+        <!--歌曲名称-->
+        <div class="head-name">
+            <span>夜曲——周杰伦</span>
+        </div>
+        <!--进度条-->
+        <div class="head-Degree">
+            <div class="deg-box">
+            <div class="deg-total"></div>
+            <div class="deg-now"></div>
+            <div class="deg-bar"></div>
+            </div>
+            <div class="head-time">
+                <span class="time-now">00:00</span>/<span class="time-con">03:46</span>
+            </div>
+        </div>
+        <!--操作台-->
+        <div class="head-con">
+            <div class="con-prev"></div>
+            <div class="con-str"></div>
+            <div class="con-next"></div>
+            <div class="con-vol"></div>
+            <div class="con-cir"></div>
+        </div>
+        </div>
+    </div>
+    <div class="body">
+        <ul></ul>
+    </div>
+</div>
+<audio></audio>
+<script>
+
+    var date = [];
+    //获取元素
+    var index = 0;
+    var headPic = document.querySelector('.head-pic img');
+    var audio = document.querySelector('audio');
+    var sing = document.querySelector('.head-name span');
+    var conStr = document.querySelector('.head-con .con-str');
+    var conPrev = document.querySelector('.head-con .con-prev');
+    var  conNext = document.querySelector('.head-con .con-next');
+    var timeCon = document.querySelector('.head-time .time-con');
+    var timeNow = document.querySelector('.head-time .time-now');
+    var degBox = document.querySelector('.head-Degree .deg-box');
+    var degTotal = document.querySelector('.deg-box .deg-total');
+    var degBar = document.querySelector('.deg-box .deg-bar');
+    var degNow = document.querySelector('.deg-box .deg-now');
+    var conCir = document.querySelector('.con-cir');
+    var bodyUl = document.querySelector('.body ul');
+    var searchBon = document.querySelector(' .search #searchBon');
+    var searchText = document.querySelector(' .search #searchText');
+    var lis = null;
+    //计时器
+    var timer =null;
+    //旋转角度
+    var rotate = 0;
+
+    searchBon.addEventListener('click',function () {
+        $.ajax({
+            url:'https://api.imjad.cn/cloudmusic/',
+            data:{
+                type:'search',
+                s:searchText.value
+            },
+            type :'get',
+            success:function (data) {
+               date = data.result.songs;
+                var str = '';
+                for (var i=0 ;i<date.length;i++){
+                        str += '<li><span>' + date[i].name + '</span><span>';
+                        for (var j = 0; j < date[i].ar.length; j++) {
+                            str += date[i].ar[j].name;
+                        }
+                        str += '</span></li>';
+                }
+                bodyUl.innerHTML = str;
+                lis=document.querySelectorAll('li');
+                init();
+            },
+            error:function (err) {
+                console.log(err);
+            }
+        });
+    });
+
+  $('.body ul').on('click','li',function () {
+      index=$(this).index();
+
+      audio.src = 'http://music.163.com/song/media/outer/url?id='+date[index].id+'.mp3';
+      init();
+      play();
+  });
+    var mode = 0;
+    var modeArr = [-206,-233,-73];
+    conCir.addEventListener('click',function () {
+        mode =++mode>modeArr.length-1? 0:mode;
+        conCir.style.backgroundPositionY = modeArr[mode] + 'px';
+    });
+    //初始化方法
+    function init() {
+        rotate=0;
+        //封面专辑更改
+        headPic.src = date[index].al.picUrl;
+        //歌手更改
+        sing.innerHTML = date[index].name +'——';
+        for(var j=0 ;j<date[index].ar.length;j++){
+            sing.innerHTML+= date[index].ar[j].name;
+        }
+        //每次切歌初始化
+        for(var i = 0 ; i<date.length;i++){
+            lis[i].className = '' ;
+        }
+        lis[index].className = 'active';
+    }
+    function play(){
+        headPic.src = date[index].al.picUrl;
+        audio.play();
+        conStr.style.backgroundPositionX = -30 + 'px';
+        //计时器
+        clearInterval(timer);
+        timer = setInterval(function () {
+            rotate++;
+            headPic.style.transform = 'rotate('+ rotate+'deg)';
+        },30);
+    }
+    //将播放键变成暂停间
+    conStr.addEventListener('click',function () {
+        if(audio.paused){
+            play();
+        }else {
+            //音乐停止
+            audio.pause();
+            conStr.style.backgroundPositionX = 0 + 'px';
+            clearInterval(timer);
+        }
+    });
+    //上一曲
+    conPrev.addEventListener('click',function () {
+        if(mode==2){
+            do {
+                var  randomNum= Math.floor(Math.random() * date.length);
+            }while (randomNum==index);
+            index = randomNum;
+        }else {
+            index--;
+        }
+        index = index<0 ? index =date.length  -1:index;
+        audio.src = 'http://music.163.com/song/media/outer/url?id='+date[index].id+'.mp3';
+            init();
+            play();
+    });
+    //下一曲
+    conNext.addEventListener('click',function () {
+        if(mode==2){
+            do {
+                var  randomNum= Math.floor(Math.random() * date.length);
+            }while (randomNum==index);
+            index = randomNum;
+        }else {
+            index++;
+        }
+        index = index>date.length -1 ? 0:index;
+        audio.src = 'http://music.163.com/song/media/outer/url?id='+date[index].id+'.mp3';
+        init();
+        play();
+    });
+    //时间格式
+    function formatTime(time){
+       return time>9? time:'0'+time ;
+    }
+    //歌曲总时长
+    //canplay当音频文件准备完成后，触发该事件
+    audio.addEventListener('canplay',function () {
+        var min = parseInt(audio.duration/60);
+        var sss = parseInt(audio.duration%60);
+        timeCon.innerHTML =formatTime(min)+':'+formatTime(sss);
+
+        //播放时长
+        audio.addEventListener('timeupdate',function () {
+            var min1 = parseInt(audio.currentTime/60);
+            var sss1 = parseInt(audio.currentTime%60);
+            timeNow.innerHTML =formatTime(min1)+':'+formatTime(sss1);
+            var left = audio.currentTime/audio.duration* degTotal.clientWidth;
+            degBar.style.left = left +'px';
+
+            //已播放的进度
+            degNow.style.width = left +'px';
+
+            if(audio.ended){
+                switch (mode) {
+                    case 0:
+                        index = ++index >date.length-1 ? 0:index;
+                        init();
+                        play();
+                        break;
+                    case 1:
+                        init();
+                        play();
+                        break;
+                    case 2:
+
+                        do {
+                          var  randomNum= Math.floor(Math.random() * date.length);
+                        }while (randomNum==index);
+                        index = randomNum;
+                        init();
+                        play();
+                        break;
+                }
+            }
+        });
+        degBox.addEventListener('click',function (e) {
+            //当前音乐所播放的时长=鼠标点击的位置/总长度*音乐总时长
+            audio.currentTime = e.offsetX/degTotal.clientWidth * audio.duration;
+            console.log(audio.currentTime);
+        })
+    });
+</script>
+</body>
+</html>
